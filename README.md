@@ -37,8 +37,6 @@ This is written in markdown language.
 ---
 **Testimonial:**
 
-**John Doe:** (Change to your name)
+**Hanlong Hu:** 
 
-Throughout ACTL1101, I have mastered the topics listed in principles of actuarial science, and the coding assignment work is mine. I feel much more prepared for my future career.
-
-😄😄😄
+Throughout ACTL1101, I have learned the basics listed in principles of actuarial science, and the coding assignment work is mine. I feel more prepared for my future career.
