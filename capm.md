@@ -81,7 +81,12 @@ $$
 $$
 
 ```r
-#fill the code
+df <- df %>%
+  mutate(
+    AMD_return = ((AMD - lag(AMD)) / lag(AMD)),
+    GSPC_return = ((GSPC - lag(GSPC))/lag(GSPC))
+  ) %>%
+  na.omit
 ```
 
 - **Calculate Risk-Free Rate**: Calculate the daily risk-free rate by conversion of annual risk-free Rate. This conversion accounts for the compounding effect over the days of the year and is calculated using the formula:
@@ -91,21 +96,31 @@ $$
 $$
 
 ```r
-#fill the code
+df <- df %>%
+  mutate(
+    DRFrate = (1 + (RF/100))^(1/360) - 1
+  )
 ```
 
 
 - **Calculate Excess Returns**: Compute the excess returns for AMD and the S&P 500 by subtracting the daily risk-free rate from their respective returns.
 
 ```r
-#fill the code
+df <- df %>%
+  na.omit %>% #there is no returns on first day
+  mutate(
+    AMD_excess_returns = (AMD_return - DRFrate),
+    GSPC_excess_returns = (GSPC_return - DRFrate)
+  )
 ```
 
 
 - **Perform Regression Analysis**: Using linear regression, we estimate the beta (\(\beta\)) of AMD relative to the S&P 500. Here, the dependent variable is the excess return of AMD, and the independent variable is the excess return of the S&P 500. Beta measures the sensitivity of the stock's returns to fluctuations in the market.
 
 ```r
-#fill the code
+model <- lm(AMD_excess_returns ~ GSPC_excess_returns, data = df)
+summary(model)
+anova(model)
 ```
 
 
@@ -114,13 +129,18 @@ $$
 What is your \(\beta\)? Is AMD more volatile or less volatile than the market?
 
 **Answer:**
+My beta value is 1.5699987 which shows that the AMD stock is more volatile than the market(S&P 500 returns) as it has a coefficient greater than 1.
 
 
 #### Plotting the CAPM Line
 Plot the scatter plot of AMD vs. S&P 500 excess returns and add the CAPM regression line.
 
 ```r
-#fill the code
+# Scatter plot of the data
+ggplot(df, aes(x = GSPC_excess_returns, y = AMD_excess_returns)) +
+  geom_point() +  # Add points
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Add linear regression line
+  labs(x = "AMD_excess_returns", y = "GSPC_excess_returns", title = "CAPM plot")
 ```
 
 ### Step 3: Predictions Interval
@@ -131,5 +151,32 @@ Suppose the current risk-free rate is 5.0%, and the annual expected return for t
 **Answer:**
 
 ```r
-#fill the code
+# Length of S&P500 excess returns column
+n <- length(df$GSPC_excess_returns)
+# 90% confidence level, degrees of freedom equals to n-1-1 or (n-2) 
+alpha <- 0.10
+t_value <- qt(1 - alpha/2, df = n - 2)
+#estimated returns: expected return = intercept + coefficient*(0.133 - 0.05) + 0.05
+estimated_return <- 0.0011041 + 1.5699987*(0.133 - 0.05) + 0.05
+mean_GSPC = mean(df$GSPC_excess_returns)
+#Standard error of the estimate (square root of MSE)
+se <- sqrt(sum(residuals(model)^2)/(n-2))
+SST <- sum((df$GSPC_excess_returns - mean_GSPC)^2)
+
+# Calculate the standard error of the forecast, 
+# let X_f = 0.133 divided by sqrt(252)
+X_f <- 0.133/sqrt(252)
+sf <- se * sqrt(1 + 1/n + (X_f - mean_GSPC)^2 / SST)
+
+# Then to find the annual standard error for 
+# prediction for the forecast times sf by sqrt(252)
+asf <- sf * sqrt(252)
+
+# Prediction interval 
+lower_bound <- estimated_return - t_value* asf
+upper_bound <- estimated_return + t_value * asf
+cat("The estimated returns for AMD given an expected return of %13.3 for S&P 500 is",
+    round (estimated_return*100, 2),"%\n")
+cat("The 90% prediction interval is [", round(lower_bound, 2), ",", 
+    round(upper_bound, 2), "]\n")
 ```
